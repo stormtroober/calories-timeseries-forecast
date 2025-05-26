@@ -7,7 +7,7 @@ from statsmodels.tsa.seasonal import STL
 from scipy import stats
 from pykalman import KalmanFilter
 from logger import logger
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, PowerTransformer
 
 def apply_kalman_filter(data):
     """Apply Kalman filter for smoothing time series data"""
@@ -23,7 +23,7 @@ def apply_kalman_filter(data):
     
     return pd.Series(state_means.flatten(), index=data.index)
 
-def preprocessing(df, apply_scaling=False, apply_kalman=False):
+def preprocessing(df, apply_scaling=False, apply_kalman=False, transform_method=None):
     dataset = df['Calories (kcal)'].copy()
     nan_count = dataset.isnull().sum()
     logger.info(f"Number of NaN values in 'Calories (kcal)': {nan_count}")
@@ -63,12 +63,39 @@ def preprocessing(df, apply_scaling=False, apply_kalman=False):
     print(f"Dataset size after outlier removal: {len(dataset_clean)}")
     print(f"Outliers removed: {outliers_removed} ({outliers_removed/len(dataset)*100:.2f}%)")
 
+    # Optional: Apply transformation if data is not normal
+    if transform_method is not None:
+        if transform_method == "log":
+            # Add small constant to avoid log(0)
+            dataset_transformed = np.log1p(dataset_clean)
+            print("Applied log transformation")
+        elif transform_method == "sqrt":
+            dataset_transformed = np.sqrt(dataset_clean)
+            print("Applied square root transformation")
+        elif transform_method == "box-cox":
+            # Box-Cox requires all positive values
+            from scipy.stats import boxcox
+            dataset_positive = dataset_clean + 1e-6 if (dataset_clean <= 0).any() else dataset_clean
+            transformed, lmbda = boxcox(dataset_positive)
+            dataset_transformed = pd.Series(transformed, index=dataset_clean.index)
+            print(f"Applied box-cox transformation (lambda={lmbda:.4f})")
+        elif transform_method == "yeo-johnson":
+            pt = PowerTransformer(method="yeo-johnson")
+            dataset_transformed = pt.fit_transform(dataset_clean.values.reshape(-1, 1)).flatten()
+            dataset_transformed = pd.Series(dataset_transformed, index=dataset_clean.index)
+            print("Applied yeo-johnson transformation")
+        else:
+            print(f"Unknown transform_method: {transform_method}, skipping transformation")
+            dataset_transformed = dataset_clean
+    else:
+        dataset_transformed = dataset_clean
+
     # 4. Apply Kalman filter for smoothing (if enabled)
     if apply_kalman:
-        dataset_processed = apply_kalman_filter(dataset_clean)
+        dataset_processed = apply_kalman_filter(dataset_transformed)
         print("Applied Kalman filter for data smoothing")
     else:
-        dataset_processed = dataset_clean
+        dataset_processed = dataset_transformed
         print("Kalman filter not applied")
 
     # 5. Apply scaling last (if needed)
@@ -86,7 +113,8 @@ def preprocessing(df, apply_scaling=False, apply_kalman=False):
     plt.figure(figsize=(12, 6))
     plt.plot(dataset.index, dataset, label='Original (no NaNs)', alpha=0.5)
     plt.plot(dataset_clean.index, dataset_clean, label='After Outlier Removal', alpha=0.7)
-    
+    if transform_method is not None:
+        plt.plot(dataset_transformed.index, dataset_transformed, label=f'After {transform_method} Transformation', alpha=0.7)
     if apply_kalman:
         plt.plot(dataset_processed.index, dataset_processed, label='Smoothed (Kalman Filter)', linewidth=2)
         if apply_scaling:
