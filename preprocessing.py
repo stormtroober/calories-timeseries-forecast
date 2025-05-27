@@ -7,7 +7,7 @@ from statsmodels.tsa.seasonal import STL
 from scipy import stats
 from pykalman import KalmanFilter
 from logger import logger
-from sklearn.preprocessing import StandardScaler, PowerTransformer
+from sklearn.preprocessing import StandardScaler
 
 def apply_kalman_filter(data):
     """Apply Kalman filter for smoothing time series data"""
@@ -45,8 +45,8 @@ def preprocessing(df, apply_scaling=False, apply_kalman=False, transform_method=
         print("Data does not appear to be normally distributed (p <= 0.05)")
 
     # 3. Remove outliers
-    Q1 = dataset.quantile(0.2)
-    Q3 = dataset.quantile(0.8)
+    Q1 = dataset.quantile(0.25)
+    Q3 = dataset.quantile(0.75)
     IQR = Q3 - Q1
     
     # Define outlier bounds
@@ -63,30 +63,24 @@ def preprocessing(df, apply_scaling=False, apply_kalman=False, transform_method=
     print(f"Dataset size after outlier removal: {len(dataset_clean)}")
     print(f"Outliers removed: {outliers_removed} ({outliers_removed/len(dataset)*100:.2f}%)")
 
-    # Optional: Apply transformation if data is not normal
-    if transform_method is not None:
-        if transform_method == "log":
-            # Add small constant to avoid log(0)
-            dataset_transformed = np.log1p(dataset_clean)
-            print("Applied log transformation")
-        elif transform_method == "sqrt":
-            dataset_transformed = np.sqrt(dataset_clean)
-            print("Applied square root transformation")
-        elif transform_method == "box-cox":
-            # Box-Cox requires all positive values
-            from scipy.stats import boxcox
-            dataset_positive = dataset_clean + 1e-6 if (dataset_clean <= 0).any() else dataset_clean
-            transformed, lmbda = boxcox(dataset_positive)
-            dataset_transformed = pd.Series(transformed, index=dataset_clean.index)
-            print(f"Applied box-cox transformation (lambda={lmbda:.4f})")
-        elif transform_method == "yeo-johnson":
-            pt = PowerTransformer(method="yeo-johnson")
-            dataset_transformed = pt.fit_transform(dataset_clean.values.reshape(-1, 1)).flatten()
-            dataset_transformed = pd.Series(dataset_transformed, index=dataset_clean.index)
-            print("Applied yeo-johnson transformation")
+    # Optional: Apply only Box-Cox transformation if requested
+    boxcox_lambda = None
+    if transform_method == "box-cox":
+        from scipy.stats import boxcox
+        dataset_positive = dataset_clean + 1e-6 if (dataset_clean <= 0).any() else dataset_clean
+        transformed, lmbda = boxcox(dataset_positive)
+        dataset_transformed = pd.Series(transformed, index=dataset_clean.index)
+        boxcox_lambda = lmbda
+        print(f"Applied box-cox transformation (lambda={lmbda:.4f})")
+
+        # Repeat Shapiro-Wilk test on Box-Cox–transformed data
+        shapiro_stat_bc, shapiro_p_bc = stats.shapiro(dataset_transformed)
+        print(f"Shapiro-Wilk Statistic after Box-Cox: {shapiro_stat_bc}")
+        print(f"Shapiro-Wilk p-value after Box-Cox: {shapiro_p_bc}")
+        if shapiro_p_bc > 0.05:
+            print("Transformed data appears to be normally distributed (p > 0.05)")
         else:
-            print(f"Unknown transform_method: {transform_method}, skipping transformation")
-            dataset_transformed = dataset_clean
+            print("Transformed data does not appear to be normally distributed (p <= 0.05)")
     else:
         dataset_transformed = dataset_clean
 
@@ -94,6 +88,14 @@ def preprocessing(df, apply_scaling=False, apply_kalman=False, transform_method=
     if apply_kalman:
         dataset_processed = apply_kalman_filter(dataset_transformed)
         print("Applied Kalman filter for data smoothing")
+
+        shapiro_stat_bc, shapiro_p_bc = stats.shapiro(dataset_processed)
+        print(f"Shapiro-Wilk Statistic after Box-Cox e Kallman: {shapiro_stat_bc}")
+        print(f"Shapiro-Wilk p-value after Box-Cox e Kallman: {shapiro_p_bc}")
+        if shapiro_p_bc > 0.05:
+            print("Transformed data appears to be normally distributed (p > 0.05)")
+        else:
+            print("Transformed data does not appear to be normally distributed (p <= 0.05)")
     else:
         dataset_processed = dataset_transformed
         print("Kalman filter not applied")
@@ -110,28 +112,52 @@ def preprocessing(df, apply_scaling=False, apply_kalman=False, transform_method=
         print("No scaling applied")
     
     # Plot the preprocessing steps and final result
-    plt.figure(figsize=(12, 6))
-    plt.plot(dataset.index, dataset, label='Original (no NaNs)', alpha=0.5)
-    plt.plot(dataset_clean.index, dataset_clean, label='After Outlier Removal', alpha=0.7)
-    if transform_method is not None:
-        plt.plot(dataset_transformed.index, dataset_transformed, label=f'After {transform_method} Transformation', alpha=0.7)
-    if apply_kalman:
-        plt.plot(dataset_processed.index, dataset_processed, label='Smoothed (Kalman Filter)', linewidth=2)
+    if transform_method == "box-cox":
+        # Plot 1: Original, Outlier Removal, Final Output (all in original scale)
+        plt.figure(figsize=(12, 6))
+        plt.plot(dataset.index, dataset, label='Original (no NaNs)', alpha=0.5)
+        plt.plot(dataset_clean.index, dataset_clean, label='After Outlier Removal', alpha=0.7)
+        #plt.plot(dataset_final.index, dataset_final, label='Final Output (Box-Cox, Kalman, Scaled)', linestyle='--', linewidth=2)
+        plt.title('Preprocessing Result (Original Scale)')
+        plt.xlabel('Timestamp')
+        plt.ylabel('Calories (kcal)')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+
+        # Plot 2: Box-Cox transformed and postprocessing steps (all in Box-Cox scale)
+        plt.figure(figsize=(12, 6))
+        plt.plot(dataset_transformed.index, dataset_transformed, label='Box-Cox Transformed', alpha=0.7)
+        if apply_kalman:
+            plt.plot(dataset_processed.index, dataset_processed, label='Smoothed (Kalman Filter)', linewidth=2)
         if apply_scaling:
-            plt.plot(dataset_final.index, dataset_final, label='Final Output (Smoothed + Scaled)', linestyle='--')
-        else:
-            plt.plot(dataset_final.index, dataset_final, label='Final Output (Smoothed)', linestyle='--')
+            plt.plot(dataset_final.index, dataset_final, label='Final Output (Scaled)', linestyle='--', linewidth=2)
+        plt.title('Preprocessing Result (Box-Cox Scale)')
+        plt.xlabel('Timestamp')
+        plt.ylabel('Box-Cox( Calories (kcal) )')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
     else:
-        if apply_scaling:
-            plt.plot(dataset_final.index, dataset_final, label='Final Output (Scaled)', linestyle='--')
+        # Single plot for non-Box-Cox
+        plt.figure(figsize=(12, 6))
+        plt.plot(dataset.index, dataset, label='Original (no NaNs)', alpha=0.5)
+        plt.plot(dataset_clean.index, dataset_clean, label='After Outlier Removal', alpha=0.7)
+        if apply_kalman:
+            plt.plot(dataset_processed.index, dataset_processed, label='Smoothed (Kalman Filter)', linewidth=2)
+            if apply_scaling:
+                plt.plot(dataset_final.index, dataset_final, label='Final Output (Smoothed + Scaled)', linestyle='--')
+            else:
+                plt.plot(dataset_final.index, dataset_final, label='Final Output (Smoothed)', linestyle='--')
         else:
-            # Final output is same as cleaned data, so just highlight it
-            plt.plot(dataset_final.index, dataset_final, label='Final Output', linestyle='--', linewidth=2)
-    
-    plt.title('Preprocessing Result')
-    plt.xlabel('Timestamp')
-    plt.ylabel('Calories (kcal)')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-    return dataset_final, scaler
+            if apply_scaling:
+                plt.plot(dataset_final.index, dataset_final, label='Final Output (Scaled)', linestyle='--')
+            else:
+                plt.plot(dataset_final.index, dataset_final, label='Final Output', linestyle='--', linewidth=2)
+        plt.title('Preprocessing Result')
+        plt.xlabel('Timestamp')
+        plt.ylabel('Calories (kcal)')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+    return dataset_final, scaler, boxcox_lambda
