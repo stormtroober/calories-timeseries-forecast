@@ -6,7 +6,6 @@ from statsmodels.graphics.tsaplots import plot_acf
 from statsmodels.tsa.seasonal import STL
 from scipy import stats
 from pykalman import KalmanFilter
-from logger import logger
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.seasonal import seasonal_decompose
 from sklearn.preprocessing import StandardScaler
@@ -52,7 +51,7 @@ def preprocessing(
     # 1. Clean initial data
     dataset = df['Calories (kcal)'].copy()
     nan_count = dataset.isnull().sum()
-    logger.info(f"Number of NaN values in 'Calories (kcal)': {nan_count}")
+    print(f"Number of NaN values in 'Calories (kcal)': {nan_count}")
     dataset = dataset.dropna()
     
     print(f"Original dataset size: {len(dataset)}")
@@ -66,9 +65,9 @@ def preprocessing(
     val_original = dataset.iloc[n_train:n_train + n_val].copy()
     test_original = dataset.iloc[n_train + n_val:].copy()
 
-    logger.info(f"Split data: train={len(train_original)} ({train_frac*100:.0f}%), "
-                f"val={len(val_original)} ({val_frac*100:.0f}%), "
-                f"test={len(test_original)} ({test_frac*100:.0f}%)")
+    print(f"Train size: {len(train_original)} samples")
+    print(f"Validation size: {len(val_original)} samples")
+    print(f"Test size: {len(test_original)} samples")
 
     # 3. Statistical tests on training data
     print("\n=== STATISTICAL TESTS (Training Set) ===")

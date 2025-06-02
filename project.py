@@ -3,7 +3,6 @@ from preprocessing import preprocessing
 from models.sarima import fit_sarima_model, auto_sarima_search 
 from models.mlp_keras import fit_mlp_model, grid_search_mlp
 from models.xgboost import fit_xgboost_model, grid_search_xgboost
-
 import numpy as np
 import tensorflow as tf
 
@@ -43,7 +42,6 @@ model_results, val_predictions, test_predictions = fit_sarima_model(
     seasonal_order=(0, 0, 0, 30)
 )
 
-# Fit MLP model
 model_mlp, val_preds_mlp, test_preds_mlp = fit_mlp_model(data_dict_mlp,
                                                          look_back=30,
                                                          hidden_units=8,
