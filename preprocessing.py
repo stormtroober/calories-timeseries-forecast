@@ -7,6 +7,8 @@ from statsmodels.tsa.seasonal import STL
 from scipy import stats
 from pykalman import KalmanFilter
 from logger import logger
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
+from statsmodels.tsa.seasonal import seasonal_decompose
 from sklearn.preprocessing import StandardScaler
 
 def apply_kalman_filter(data):
@@ -23,20 +25,109 @@ def apply_kalman_filter(data):
     
     return pd.Series(state_means.flatten(), index=data.index)
 
-def preprocessing(df, apply_scaling=False, apply_kalman=False, transform_method=None):
+def preprocess_validation_test(val_set, test_set, preprocessing_params):
+    """
+    Apply the same preprocessing steps to validation and test sets
+    using parameters learned from the training set
+    """
+    # Extract parameters from training preprocessing
+    Q1, Q3, multiplier, boxcox_lambda, scaler, apply_kalman, apply_scaling = preprocessing_params
+    
+    # Apply outlier removal with same bounds as training
+    IQR = Q3 - Q1
+    lower_bound = Q1 - multiplier * IQR
+    upper_bound = Q3 + multiplier * IQR
+    
+    # Process validation set
+    val_outlier_mask = (val_set >= lower_bound) & (val_set <= upper_bound)
+    val_clean = val_set[val_outlier_mask]
+    
+    # Process test set
+    test_outlier_mask = (test_set >= lower_bound) & (test_set <= upper_bound)
+    test_clean = test_set[test_outlier_mask]
+    
+    logger.info(f"Validation outliers removed: {len(val_set) - len(val_clean)}")
+    logger.info(f"Test outliers removed: {len(test_set) - len(test_clean)}")
+    
+    # Apply Box-Cox transformation if used in training
+    if boxcox_lambda is not None:
+        from scipy.stats import boxcox
+        val_positive = val_clean + 1e-6 if (val_clean <= 0).any() else val_clean
+        test_positive = test_clean + 1e-6 if (test_clean <= 0).any() else test_clean
+        
+        val_transformed = boxcox(val_positive, lmbda=boxcox_lambda)
+        test_transformed = boxcox(test_positive, lmbda=boxcox_lambda)
+        
+        val_transformed = pd.Series(val_transformed, index=val_clean.index)
+        test_transformed = pd.Series(test_transformed, index=test_clean.index)
+    else:
+        val_transformed = val_clean
+        test_transformed = test_clean
+    
+    # Apply Kalman filter if used in training
+    if apply_kalman:
+        val_processed = apply_kalman_filter(val_transformed)
+        test_processed = apply_kalman_filter(test_transformed)
+    else:
+        val_processed = val_transformed
+        test_processed = test_transformed
+    
+    # Apply scaling if used in training
+    if apply_scaling and scaler is not None:
+        val_scaled = scaler.transform(val_processed.values.reshape(-1, 1)).flatten()
+        test_scaled = scaler.transform(test_processed.values.reshape(-1, 1)).flatten()
+        
+        val_final = pd.Series(val_scaled, index=val_processed.index)
+        test_final = pd.Series(test_scaled, index=test_processed.index)
+    else:
+        val_final = val_processed
+        test_final = test_processed
+    
+    return val_final, test_final
+
+def preprocessing(
+    df, 
+    apply_scaling=False, 
+    apply_kalman=True, 
+    transform_method='box-cox',
+    plot_decomposition=False,
+    decomposition_period=30
+):
     dataset = df['Calories (kcal)'].copy()
     nan_count = dataset.isnull().sum()
     logger.info(f"Number of NaN values in 'Calories (kcal)': {nan_count}")
 
     dataset = dataset.dropna()
 
+    # 2. Split into train / validation / test sets (e.g., 70% / 15% / 15%)
+    train_frac = 0.70
+    val_frac = 0.15
+    test_frac = 0.15
+
+    n = len(dataset)
+    n_train = int(n * train_frac)
+    n_val = int(n * val_frac)
+
+    train_set = dataset.iloc[:n_train]
+    val_set = dataset.iloc[n_train:n_train + n_val]
+    test_set = dataset.iloc[n_train + n_val:]
+
+    logger.info(f"Split data: train={len(train_set)} ({train_frac*100:.0f}%), "
+                f"val={len(val_set)} ({val_frac*100:.0f}%), "
+                f"test={len(test_set)} ({test_frac*100:.0f}%)")
+
     # 2. Apply statistical tests on original data
-    result = adfuller(dataset)
-    print(f"ADF Statistic: {result[0]}")
-    print(f"p-value: {result[1]}")
+    result = adfuller(train_set)
+    adf_stat, p_value = result[0], result[1]
+    print(f"ADF Statistic: {adf_stat}")
+    print(f"p-value: {p_value}")
+    if p_value < 0.05:
+        print("Time series appears stationary (p < 0.05)")
+    else:
+        print("Time series appears non-stationary (p >= 0.05)")
 
     # Shapiro-Wilk test for normality
-    shapiro_stat, shapiro_p = stats.shapiro(dataset)
+    shapiro_stat, shapiro_p = stats.shapiro(train_set)
     print(f"Shapiro-Wilk Statistic: {shapiro_stat}")
     print(f"Shapiro-Wilk p-value: {shapiro_p}")
     if shapiro_p > 0.05:
@@ -44,20 +135,23 @@ def preprocessing(df, apply_scaling=False, apply_kalman=False, transform_method=
     else:
         print("Data does not appear to be normally distributed (p <= 0.05)")
 
-    # 3. Remove outliers
-    Q1 = dataset.quantile(0.25)
-    Q3 = dataset.quantile(0.75)
+    # you can then continue processing on train_set / val_set / test_set
+    #3. Remove outliers
+    Q1 = train_set.quantile(0.2)
+    Q3 = train_set.quantile(0.7)
     IQR = Q3 - Q1
+
+    # Use a larger multiplier to be less strict (removes fewer outliers)
+    multiplier = 3  # was 1.5
+
+    lower_bound = Q1 - multiplier * IQR
+    upper_bound = Q3 + multiplier * IQR
+
+    # Filter the training set
+    outlier_mask = (train_set >= lower_bound) & (train_set <= upper_bound)
+    dataset_clean = train_set[outlier_mask]
     
-    # Define outlier bounds
-    lower_bound = Q1 - 1.5 * IQR
-    upper_bound = Q3 + 1.5 * IQR
-    
-    # Remove outliers
-    outlier_mask = (dataset >= lower_bound) & (dataset <= upper_bound)
-    dataset_clean = dataset[outlier_mask]
-    
-    outliers_removed = len(dataset) - len(dataset_clean)
+    outliers_removed = len(train_set) - len(dataset_clean)
     logger.info(f"Removed {outliers_removed} outliers using IQR method")
     print(f"Original dataset size: {len(dataset)}")
     print(f"Dataset size after outlier removal: {len(dataset_clean)}")
@@ -160,4 +254,34 @@ def preprocessing(df, apply_scaling=False, apply_kalman=False, transform_method=
         plt.legend()
         plt.grid(True)
         plt.show()
-    return dataset_final, scaler, boxcox_lambda
+    
+
+    # Seasonal Decomposition of final processed data
+    if plot_decomposition and len(dataset_final) >= 2 * decomposition_period:
+        try:
+            print(f"\n[Preprocessing] Performing Seasonal Decomposition (period={decomposition_period}) on Final Processed Data:")
+            decompose_result = seasonal_decompose(dataset_final, model='additive', period=decomposition_period)
+            plt.figure(figsize=(12, 10))
+            plt.subplot(411)
+            plt.plot(decompose_result.observed, label='Observed')
+            plt.legend(loc='upper left')
+            plt.title(f'Seasonal Decomposition - Final Processed Data (Period={decomposition_period})')
+            plt.subplot(412)
+            plt.plot(decompose_result.trend, label='Trend')
+            plt.legend(loc='upper left')
+            plt.subplot(413)
+            plt.plot(decompose_result.seasonal,label='Seasonality')
+            plt.legend(loc='upper left')
+            plt.subplot(414)
+            plt.plot(decompose_result.resid, label='Residuals')
+            plt.legend(loc='upper left')
+            plt.tight_layout()
+            plt.show()
+        except Exception as e:
+            print(f"[Preprocessing] Could not perform seasonal decomposition: {e}")
+    
+    # Store preprocessing parameters for later use
+    preprocessing_params = (Q1, Q3, multiplier, boxcox_lambda, scaler, apply_kalman, apply_scaling)
+    
+    # Also return the original splits for SARIMA
+    return dataset_final, scaler, boxcox_lambda, preprocessing_params, train_set, val_set, test_set
