@@ -38,6 +38,7 @@ def preprocessing(
     apply_kalman=True, 
     transform_method='box-cox',
     plot_decomposition=False,
+    plot_processed_data=False,
     decomposition_period=30,
     train_frac=0.70,
     val_frac=0.15,
@@ -190,7 +191,7 @@ def preprocessing(
     print(f"Box-Cox lambda: {boxcox_lambda}")
 
     # 9. Visualization
-    if transform_method == "box-cox":
+    if plot_processed_data and transform_method == "box-cox":
         # Plot original scale
         plt.figure(figsize=(15, 5))
         plt.subplot(1, 2, 1)

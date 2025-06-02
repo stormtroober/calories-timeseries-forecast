@@ -16,6 +16,7 @@ data_dict = preprocessing(
     apply_kalman=True, 
     transform_method='box-cox',
     plot_decomposition=False,
+    plot_processed_data=False,
     decomposition_period=30
 )
 
@@ -42,6 +43,7 @@ data_dict_mlp = preprocessing(
     apply_kalman=True, 
     transform_method='box-cox',
     plot_decomposition=False,
+    plot_processed_data=False,
     decomposition_period=30
 )
 
