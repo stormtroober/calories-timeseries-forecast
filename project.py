@@ -1,10 +1,7 @@
 import pandas as pd
 from preprocessing import preprocessing
-from sarima import fit_sarima_model, auto_sarima_search 
-import matplotlib.pyplot as plt
-from scipy import stats
-from mlp_keras import fit_mlp_model
-from mlp_keras import grid_search_mlp
+from models.sarima import fit_sarima_model, auto_sarima_search 
+from models.mlp_keras import fit_mlp_model, grid_search_mlp
 
 # Load and preprocess data
 dataframe = pd.read_csv('./dataset/Daily_activity_metrics.csv')
