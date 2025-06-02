@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 from xgboost import XGBRegressor
-from preprocessing import inverse_transform_predictions
+from dataset_utils.preprocessing import inverse_transform_predictions
 
 
 def evaluate_model(true, predicted, label_prefix="", scale_name=""):

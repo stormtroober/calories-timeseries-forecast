@@ -1,5 +1,5 @@
 import pandas as pd
-from preprocessing import preprocessing
+from dataset_utils.preprocessing import preprocessing
 from models.sarima import fit_sarima_model, auto_sarima_search 
 from models.mlp_keras import fit_mlp_model, grid_search_mlp
 from models.xgboost import fit_xgboost_model, grid_search_xgboost

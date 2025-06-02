@@ -34,7 +34,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
-from preprocessing import inverse_transform_predictions
+from dataset_utils.preprocessing import inverse_transform_predictions
 import warnings
 
 warnings.filterwarnings("ignore")
