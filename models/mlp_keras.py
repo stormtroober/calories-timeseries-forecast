@@ -5,6 +5,14 @@
 # epochs_list = [20, 50, 100]
 # batch_size_list = [16, 32, 64]
 
+# results_df, best_params, best_model = grid_search_mlp(
+#     data_dict_mlp,
+#     look_back_list,
+#     hidden_units_list,
+#     epochs_list,
+#     batch_size_list
+# )
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt

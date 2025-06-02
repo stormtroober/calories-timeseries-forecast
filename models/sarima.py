@@ -21,6 +21,13 @@
 # Best seasonal order: (0, 0, 0, 30)
 # Best AIC: -16842.31
 
+# best_order, best_seasonal_order, results_df = auto_sarima_search(
+#     data_dict, 
+#     seasonal_period=30,
+#     max_p=2, max_d=1, max_q=2,
+#     max_P=1, max_D=1, max_Q=1
+# )
+
 
 import pandas as pd
 import numpy as np
