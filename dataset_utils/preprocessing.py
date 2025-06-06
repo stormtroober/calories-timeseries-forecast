@@ -101,18 +101,16 @@ def preprocessing(
     
     print(f"Outlier bounds: [{lower_bound:.2f}, {upper_bound:.2f}]")
 
-    # Apply outlier removal to all sets
+    # Apply outlier removal only to training set
     train_mask = (train_original >= lower_bound) & (train_original <= upper_bound)
-    val_mask = (val_original >= lower_bound) & (val_original <= upper_bound)
-    test_mask = (test_original >= lower_bound) & (test_original <= upper_bound)
     
     train_clean = train_original[train_mask].copy()
-    val_clean = val_original[val_mask].copy()
-    test_clean = test_original[test_mask].copy()
+    val_clean = val_original.copy()  # No outlier removal
+    test_clean = test_original.copy()  # No outlier removal
     
     print(f"Train outliers removed: {len(train_original) - len(train_clean)}")
-    print(f"Val outliers removed: {len(val_original) - len(val_clean)}")
-    print(f"Test outliers removed: {len(test_original) - len(test_clean)}")
+    print(f"Val outliers removed: 0 (no filtering applied)")
+    print(f"Test outliers removed: 0 (no filtering applied)")
 
     # 5. Box-Cox transformation (parameters learned from training)
     boxcox_lambda = None
