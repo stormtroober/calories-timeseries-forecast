@@ -21,7 +21,16 @@ from keras.layers import Dense
 from sklearn.metrics import mean_squared_error, mean_absolute_error, mean_absolute_percentage_error
 from dataset_utils.preprocessing import inverse_transform_predictions
 import time
+import os
+import random
+import tensorflow as tf
 
+
+def set_seed(seed=42):
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
 
 def evaluate_model(true, predicted, label_prefix="", scale_name=""):
     """Evaluate model performance with multiple metrics"""
@@ -113,6 +122,7 @@ def grid_search_mlp(data_dict, look_back_list, hidden_units_list, epochs_list, b
             for epochs in epochs_list:
                 for batch_size in batch_size_list:
                     current_iteration += 1
+                    set_seed()
                     
                     # Calculate progress
                     progress_pct = (current_iteration / total_iterations) * 100

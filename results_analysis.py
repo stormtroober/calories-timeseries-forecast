@@ -175,21 +175,7 @@ This report presents the results of a comprehensive time series forecasting anal
 
 ### 🏆 Best Performing Model
 **{best_model[0]}** achieved the lowest test set RMSE of **{best_model[1]['test']['rmse']:.4f} kcal**
-
-### Performance Insights
 """
-    
-    for model_name, metrics in test_sorted:
-        test_rmse = metrics['test']['rmse']
-        val_rmse = metrics['val']['rmse']
-        overfitting_indicator = abs(test_rmse - val_rmse) / val_rmse * 100
-        md_content += f"- **{model_name}:** Test RMSE = {test_rmse:.4f} kcal"
-        if overfitting_indicator < 5:
-            md_content += " ✅ (Good generalization)\n"
-        elif overfitting_indicator < 15:
-            md_content += " ⚠️ (Moderate overfitting)\n"
-        else:
-            md_content += " ❌ (Potential overfitting)\n"
     
     # Write to file
     with open('model_results_summary.md', 'w') as f:

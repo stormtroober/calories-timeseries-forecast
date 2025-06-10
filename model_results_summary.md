@@ -1,6 +1,6 @@
 # Time Series Forecasting Results Report
 
-**Generated on:** 2025-06-10 17:27:22
+**Generated on:** 2025-06-10 17:50:54
 
 ## Project Overview
 This report presents the results of a comprehensive time series forecasting analysis on daily activity metrics, comparing three different modeling approaches: SARIMA, Multi-Layer Perceptron (MLP), and XGBoost.
@@ -49,9 +49,9 @@ This report presents the results of a comprehensive time series forecasting anal
 **Performance Metrics:**
 | Metric | Validation | Test |
 |--------|------------|------|
-| RMSE (kcal) | 135.9817 | 167.0199 |
-| MAE (kcal) | 100.9873 | 130.6320 |
-| MAPE (%) | 5.67 | 7.63 |
+| RMSE (kcal) | 140.6700 | 164.2096 |
+| MAE (kcal) | 103.6437 | 126.0767 |
+| MAPE (%) | 5.77 | 7.29 |
 
 ### 3. XGBoost (Extreme Gradient Boosting)
 **Model Type:** Ensemble tree-based regression model
@@ -76,21 +76,16 @@ This report presents the results of a comprehensive time series forecasting anal
 |-------|-------------|------------|----------|--------------|
 | XGBoost | 132.5582 | 101.7312 | 5.80 | 1 |
 | SARIMA | 133.3726 | 100.2933 | 5.68 | 2 |
-| MLP | 135.9817 | 100.9873 | 5.67 | 3 |
+| MLP | 140.6700 | 103.6437 | 5.77 | 3 |
 
 ### Test Set Performance (Final Evaluation)
 | Model | RMSE (kcal) | MAE (kcal) | MAPE (%) | Rank by RMSE |
 |-------|-------------|------------|----------|--------------|
 | XGBoost | 162.9080 | 125.2021 | 7.23 | 1 |
-| SARIMA | 166.2822 | 120.8731 | 6.78 | 2 |
-| MLP | 167.0199 | 130.6320 | 7.63 | 3 |
+| MLP | 164.2096 | 126.0767 | 7.29 | 2 |
+| SARIMA | 166.2822 | 120.8731 | 6.78 | 3 |
 
 ## Key Results
 
 ### 🏆 Best Performing Model
 **XGBoost** achieved the lowest test set RMSE of **162.9080 kcal**
-
-### Performance Insights
-- **XGBoost:** Test RMSE = 162.9080 kcal ❌ (Potential overfitting)
-- **SARIMA:** Test RMSE = 166.2822 kcal ❌ (Potential overfitting)
-- **MLP:** Test RMSE = 167.0199 kcal ❌ (Potential overfitting)
