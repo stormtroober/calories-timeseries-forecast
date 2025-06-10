@@ -6,10 +6,6 @@ from models.xgboost import fit_xgboost_model, grid_search_xgboost
 import numpy as np
 import tensorflow as tf
 
-# Set random seed for reproducibility (MLP)
-SEED = 42
-np.random.seed(SEED)
-tf.random.set_seed(SEED)
 
 dataframe = pd.read_csv('./dataset/Daily_activity_metrics.csv')
 
@@ -60,3 +56,13 @@ print(results_df.head())
 print(best_config)
 
 model_xgb, val_preds_xgb, test_preds_xgb = fit_xgboost_model(data_dict, look_back=best_config['look_back'], n_estimators=best_config['n_estimators'])
+
+from results_analysis import create_comprehensive_results_report
+
+# Generate comprehensive results report
+models_performance, best_model_info = create_comprehensive_results_report(
+    model_results, val_predictions, test_predictions,  # SARIMA results
+    model_mlp, val_preds_mlp, test_preds_mlp,         # MLP results  
+    model_xgb, val_preds_xgb, test_preds_xgb,         # XGBoost results
+    results_df, best_config, data_dict                 # Additional data
+)
