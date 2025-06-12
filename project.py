@@ -3,11 +3,10 @@ from dataset_utils.preprocessing import preprocessing
 from models.sarima import fit_sarima_model, auto_sarima_search 
 from models.mlp_keras import fit_mlp_model, grid_search_mlp
 from models.xgboost import fit_xgboost_model, grid_search_xgboost
-import numpy as np
-import tensorflow as tf
 
 
 dataframe = pd.read_csv('./dataset/Daily_activity_metrics.csv')
+seasonal_period = 30  # Adjust based on your data's seasonality
 
 #Preprocessing without scaling for SARIMA and XGBoost models
 data_dict = preprocessing(
@@ -15,9 +14,9 @@ data_dict = preprocessing(
     apply_scaling=False, 
     apply_kalman=True, 
     transform_method='box-cox',
-    plot_decomposition=False,
+    plot_decomposition=True,
     plot_processed_data=False,
-    decomposition_period=30
+    decomposition_period=seasonal_period
 )
 
 #Preprocessing with scaling for MLP model 
@@ -28,18 +27,18 @@ data_dict_mlp = preprocessing(
     transform_method='box-cox',
     plot_decomposition=False,
     plot_processed_data=False,
-    decomposition_period=30
+    decomposition_period=seasonal_period
 )
 
 model_results, val_predictions, test_predictions = fit_sarima_model(
     data_dict,
-    seasonal_period=30,
+    seasonal_period=seasonal_period,
     order=(2, 0, 2),
-    seasonal_order=(0, 0, 0, 30)
+    seasonal_order=(0, 0, 0, seasonal_period)
 )
 
 model_mlp, val_preds_mlp, test_preds_mlp = fit_mlp_model(data_dict_mlp,
-                                                         look_back=30,
+                                                         look_back=seasonal_period,
                                                          hidden_units=8,
                                                          epochs=100,
                                                          batch_size=16)
