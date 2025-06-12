@@ -1,6 +1,6 @@
 # Time Series Forecasting Results Report
 
-**Generated on:** 2025-06-12 16:32:28
+**Generated on:** 2025-06-12 18:06:36
 
 ## Project Overview
 This report presents the results of a comprehensive time series forecasting analysis on daily activity metrics, comparing three different modeling approaches: SARIMA, Multi-Layer Perceptron (MLP), and XGBoost.
@@ -27,7 +27,6 @@ This report presents the results of a comprehensive time series forecasting anal
 - **Seasonal Order:** (0, 0, 0, 30)
 - **Seasonal Period:** 30 days
 - **Parameter Selection:** Auto-optimized using AIC criterion
-- **Forecasting Method:** Direct multi-step forecasting
 
 **Performance Metrics:**
 | Metric | Validation | Test |
@@ -44,23 +43,20 @@ This report presents the results of a comprehensive time series forecasting anal
 - **Batch Size:** 16
 - **Optimizer:** Adam with default parameters
 - **Loss Function:** Mean Squared Error (MSE)
-- **Forecasting Method:** Recursive multi-step forecasting
 
 **Performance Metrics:**
 | Metric | Validation | Test |
 |--------|------------|------|
-| RMSE (kcal) | 137.3316 | 196.6952 |
-| MAE (kcal) | 101.3002 | 138.0571 |
-| MAPE (%) | 5.67 | 7.52 |
+| RMSE (kcal) | 137.5815 | 166.8669 |
+| MAE (kcal) | 101.8352 | 131.3356 |
+| MAPE (%) | 5.71 | 7.69 |
 
 ### 3. XGBoost (Extreme Gradient Boosting)
 **Model Type:** Ensemble tree-based regression model
 - **Optimal Look-back Window:** 14 days
 - **Optimal N_estimators:** 15 trees
-- **Objective Function:** reg:squarederror
 - **Hyperparameter Selection:** Grid search with 48 configurations tested
 - **Search Space:** Look-back ∈ [7, 14, 21, 30, 45, 60], N_estimators ∈ [10, 15, 25, 35, 40, 50, 75, 100]
-- **Forecasting Method:** Recursive multi-step forecasting
 
 **Performance Metrics:**
 | Metric | Validation | Test |
@@ -76,14 +72,14 @@ This report presents the results of a comprehensive time series forecasting anal
 |-------|-------------|------------|----------|--------------|
 | XGBoost | 132.5582 | 101.7312 | 5.80 | 1 |
 | SARIMA | 133.3726 | 100.2933 | 5.68 | 2 |
-| MLP | 137.3316 | 101.3002 | 5.67 | 3 |
+| MLP | 137.5815 | 101.8352 | 5.71 | 3 |
 
 ### Test Set Performance (Final Evaluation)
 | Model | RMSE (kcal) | MAE (kcal) | MAPE (%) | Rank by RMSE |
 |-------|-------------|------------|----------|--------------|
 | XGBoost | 162.9080 | 125.2021 | 7.23 | 1 |
 | SARIMA | 166.2822 | 120.8731 | 6.78 | 2 |
-| MLP | 196.6952 | 138.0571 | 7.52 | 3 |
+| MLP | 166.8669 | 131.3356 | 7.69 | 3 |
 
 ## Key Results
 

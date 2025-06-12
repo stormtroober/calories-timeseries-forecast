@@ -84,7 +84,6 @@ This report presents the results of a comprehensive time series forecasting anal
 - **Seasonal Order:** (0, 0, 0, 30)
 - **Seasonal Period:** 30 days
 - **Parameter Selection:** Auto-optimized using AIC criterion
-- **Forecasting Method:** Direct multi-step forecasting
 """
 
     if 'SARIMA' in models_metrics:
@@ -106,7 +105,6 @@ This report presents the results of a comprehensive time series forecasting anal
 - **Batch Size:** 16
 - **Optimizer:** Adam with default parameters
 - **Loss Function:** Mean Squared Error (MSE)
-- **Forecasting Method:** Recursive multi-step forecasting
 """
 
     if 'MLP' in models_metrics:
@@ -124,10 +122,8 @@ This report presents the results of a comprehensive time series forecasting anal
 **Model Type:** Ensemble tree-based regression model
 - **Optimal Look-back Window:** {best_xgb_config['look_back']} days
 - **Optimal N_estimators:** {best_xgb_config['n_estimators']} trees
-- **Objective Function:** reg:squarederror
 - **Hyperparameter Selection:** Grid search with {len(xgb_results_df)} configurations tested
 - **Search Space:** Look-back ∈ [7, 14, 21, 30, 45, 60], N_estimators ∈ [10, 15, 25, 35, 40, 50, 75, 100]
-- **Forecasting Method:** Recursive multi-step forecasting
 """
 
     if 'XGBoost' in models_metrics:
